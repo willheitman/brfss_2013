@@ -18,40 +18,46 @@ library(dplyr)
 
 ### Load data
 
-Make sure your data and R Markdown files are in the same directory. When loaded
-your data file will be called `brfss2013`. Delete this note when before you submit 
-your work. 
-
 ```{r load-data}
 load("brfss2013.RData")
 ```
-
-
 
 * * *
 
 ## Part 1: Data
 
+# Data Collection Overview
+
+The data is collected via phone interviews - both landline and (starting in 2011) cell phones.  *Phone numbers are obtained via random dialing, and thus, this sample is essentially a simple random sample.*  The one complication comes in the distinction between cell phones and landlines.  Given that a landline contacts a household and a cell phone contacts an individual, I could see potential problems arising from weighting one or the other too much.  For example, weighting cell phones too heavily might result in a sample that underrepresents elderly or low income individuals among others.
+
+# Generalizability
+
+Generalizability relies on having a truly representative sample of the general population, with the population being the united state.  I have mentioned my reservations regarding cell/landline weighting, and if there was a way to conduct a stratified sample, instead, that would be preferable.  *However, generally speaking, I would say this data is generalizable to the US population.*
+
+# Causality
+
+The survey returns observations.  It is not an experiment with random assignments of traits under study.  Therefore, causality cannot be established by this data.  Relationships can be identified, but we can only speak to correlation, not causation.
 
 * * *
 
 ## Part 2: Research questions
 
-**Research quesion 1:**
+**Research question 1:**
 
-**Research quesion 2:**
+High energy level is something of a holy grail in terms of wellness, but it's not always clear how to get there, with large amounts of health advice often contradicting itself.  Two very common prescriptions for general wellness are exercising and eating dark leafy greens.  While this data set cannot establish causation, I am asking the following:  **Is there a stronger relationship between high energy days and Times eating dark green vegetables or between high energy days and amount of exercise?**
 
-**Research quesion 3:**
+**Research question 2:**
 
+Cancer is one of the most terrifying maladies humanity faces.  It can grow undetected for years, rendering treatment ineffective.  As a matter of public health, how we detect cancer is dependent on access to medical care.  I am curious to see: **Does cancer occurs at a higher or lower rate among low income individuals, which generally have less access to quality care, than in the rest of the population**
+
+**Research question 3:**
+
+Mental health is another incredibly important health factor that can take the life of both the sufferer and potentially the lives of those around them.  In the time of coronavirus, we're seeing extremes in terms of hours worked- many folks laid off and many working overtime to meet demands in necessary industries.  If there is a relationship between work quantity and mental health, we may need to be concerned about increased mental health problems in these times.  Thus, I ask: **Is there a relationship between hours worked per week and days of poor mental health?**
 
 * * *
 
 ## Part 3: Exploratory data analysis
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button (green button with orange arrow) above. Make sure that your code is visible
-in the project you submit. Delete this note when before you submit your work.
-
 **Research quesion 1:**
 
 ```{r}
@@ -70,7 +76,58 @@ in the project you submit. Delete this note when before you submit your work.
 
 **Research quesion 3:**
 
+I start with a scatterplot to see what the data looks like.  At this point, I've already filtered out some outliers in Mental Health Days (mentlhlth) that were greater than 30, since the survey question specifically lists 30 as a maximum.  Hours worked per week (scntlwk1) I have left as it is.
+
 ```{r}
+brfss2013 %>% filter(menthlth<=30) %>% ggplot(aes(x = scntlwk1, y = menthlth)) + 
+  geom_point(na.rm = TRUE) + 
+  ylim(0,30)
+
+
 
 ```
+
+Looking at the plot, it's difficult to see any kind of strong relationship.  I think it's going to be more productive to turn Hours Worked Per Week into a categoricial variable with valus for 1) low or no employment (5 hours or less), 2) normal or part time work (10 hours - 65 hours), 3) Heavy overtime (>65 hours).  Additionally, if we do the same to Mental Health Days, we can consider a binomial distribution.
+
+```{r}
+
+brfss2013 <- brfss2013 %>% mutate(ment_bucket = ifelse(menthlth<=10,"normal","poor"), work_bucket = ifelse(scntlwk1<=5,"no work",ifelse(scntlwk1>65,"overtime","normal")))
+
+brfss2013 %>% filter(!is.na(ment_bucket),!is.na(work_bucket)) %>% group_by(ment_bucket,work_bucket) %>% summarise(n())
+
+```
+
+# Overtime and Mental Health
+
+Now we can ask: Given that someone has heavy overtime, what is the probability that they are in poor mental health?  From the table above, we can see that this is 111/(985+111) = .1012
+The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = .0898
+
+So at the moment, it looks as though high overtime and poor mental health might be directly related.  Let's test that.
+
+What is the chance of getting 111 or more people of poor health out of 1096 (the number of people working overtime) if there is no relationship between the two variables?  We can run a binomial distribution with 111:1096 successes, a size of 1096, and a probability of .0898 of being in poor mental health.
+
+```{r}
+sum(dbinom(111:1096,1096,.0898))
+
+```
+As we can see, the probability is .1024.  This is a little bit high.  To be certain of a relationship, we would generally want to see a p-value of less than .05.  While there may be a relationship here, we cannot conclude with confidence that this is the case.
+
+# No work and Mental Health
+
+But what about low or no employment?  We can run the same analysis. Given that someone has no/low work, what is the probability that they are in poor mental health?  From the table above, we can see that this is 13/(13+151) = .0793
+The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = .0898
+
+So at the moment, it looks as though no work and poor mental health might be inversely related. Let's test that.
+
+What is the chance of getting 13 or fewer people of poor health out of 164 (the number of people with no/low work) if there is no relationship between the two variables?  We can run a binomial distribution with 13:164 successes, a size of 164, and a probability of .0898 of being in poor mental health.  As a check NP (.0898*164 = 14.72) and N(1-P) are both greater than 10.
+
+```{r}
+sum(dbinom(0:13,164,.0898))
+
+
+```
+We get a probability of 0.3816.  This is far too high to establish a relationship between no/low work and mental health.
+
+
+
 
