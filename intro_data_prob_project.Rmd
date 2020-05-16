@@ -68,7 +68,11 @@ Mental health is another incredibly important health factor that can take the li
 
 **Research quesion 2:**
 
+The relevant variables here are chcscncr (Ever told you had skin cancer), chcocncr (Ever told you had any other type of cancer), and income2 (income level).  First, for our purposes
 ```{r}
+
+ 
+
 
 ```
 
