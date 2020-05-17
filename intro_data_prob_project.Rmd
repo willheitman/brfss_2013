@@ -87,9 +87,12 @@ ggplot(data=brfss2013,aes(qlhlth2,exerany2)) + geom_boxplot()
 Unsurprisingly, it looks like exercise and days of high energy do share a relationship.
 
 ```{r}
-ggplot(data=brfss2013,aes(qlhlth2,grenday_)) + geom_point() + xlim(0,30) + ylim(0,500)
+ggplot(data=brfss2013,aes(grenday_,qlhlth2)) + geom_point() + xlim(0,500) + ylim(0,30)
 ```
 
+There seems very little relationship between Greens Eaten and High Energy Days.  In fact, there are many individuals in the top left of the plot that ate no greens and felt ful of energy all month.
+
+In conclusion, while we can generalize only to Alabamam, there is good support that high energy days have a stronger relationship with days or exercise than with frequency of eating dark green vegetables.
 
 
 **Research quesion 2:**
