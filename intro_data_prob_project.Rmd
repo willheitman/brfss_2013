@@ -32,7 +32,7 @@ The data is collected via phone interviews - both landline and (starting in 2011
 
 # Generalizability
 
-Generalizability relies on having a truly representative sample of the general population, with the population being the united state.  I have mentioned my reservations regarding cell/landline weighting, and if there was a way to conduct a stratified sample, instead, that would be preferable.  *However, generally speaking, I would say this data is generalizable to the US population.*
+Generalizability relies on having a truly representative sample of the general population, with the population being the United States.  I have mentioned my reservations regarding cell/landline weighting, and if there was a way to conduct a stratified sample, instead, that would be preferable.  *However, generally speaking, I would say this data is generalizable to the US population.*
 
 # Causality
 
@@ -60,8 +60,34 @@ Mental health is another incredibly important health factor that can take the li
 
 **Research quesion 1:**
 
-```{r}
+The three important variables are grenday_ (How many times did you eat dark green vegetables), exerany2 (Have you exercised in the past 30 days), and qlhlth2 (How many days full of energy in past 30)
 
+First, I'm going to create histograms for each to ensure that we don't have any funky outliers
+
+```{r}
+ggplot(data = brfss2013, aes(x=grenday_)) + geom_histogram(binwidth = 5) + xlim(0,500)
+
+ggplot(data = brfss2013, aes(x=exerany2)) + geom_bar()
+
+ggplot(data = brfss2013, aes(x=qlhlth2)) + geom_histogram(binwidth = 5)
+```
+
+This third variable, qlhlth2, turns out to have very few observations- only 461 values that aren't missing or NA.  This is disappointing, but it may be enough for our cirumstances.  The question belonged to an optional module, so it may only have been applied in certain states.  This is worth checking.
+
+```{r}
+brfss2013 %>% group_by(X_state) %>% filter(!is.na(qlhlth2)) %>% summarise(mean(qlhlth2),n())
+```
+
+Unfortunately, it looks like this module was only fully run in Alabama.  This means we do not have a representative sample for the United States.  Our results will be generalizable only to Alabama.  For what it's worth, we will continue.
+
+```{r}
+ggplot(data=brfss2013,aes(qlhlth2,exerany2)) + geom_boxplot()
+```
+
+Unsurprisingly, it looks like exercise and days of high energy do share a relationship.
+
+```{r}
+ggplot(data=brfss2013,aes(qlhlth2,grenday_)) + geom_point() + xlim(0,30) + ylim(0,500)
 ```
 
 
@@ -81,11 +107,33 @@ brfss2013 <- brfss2013 %>%
 Now we'll create a table to take a look at cancer occurrences across income brackets
 
 ```{r}
-brfss2013 %>% filter(!is.na(hadcancer),!is.na(income2)) %>% group_by(hadcancer,income2) %>% summarise(n())
+brfss2013 %>% filter(!is.na(hadcancer),!is.na(income2)) %>% group_by(income2,hadcancer) %>% summarise(n())
 
 
 ```
 
+The US Department of Health and Human services defines poverty for a family of 6 to be ~$35,000.  We'll use income less than $35,000 as our definition of low income/poverty.
+
+```{r}
+brfss2013 %>% filter(!is.na(hadcancer),!is.na(income2)) %>% group_by(hadcancer) %>% summarise(n())
+```
+```{r}
+brfss2013 %>% filter(!is.na(hadcancer),!is.na(income2)) %>% group_by(income2) %>% summarise(n())
+```
+
+
+
+The rate of cancer diagnosis in the total population is 69,026/(349,747+69,026) = **.1648**
+
+The rate of cancer diagnosis in low income population is (3332+4740+5962+7610+8905)/(25243+26626+34715+41516+48669) = 30,549/176949 = **.1726**
+
+Our number of observations should be large enough to test the signicance of this probability via binomial distribution.
+
+```{r}
+sum(dbinom(30549:176949,176949,.1648))
+```
+
+We see an incredibly tiny probability of getting as many cancer diagnoses as we did if there is no relationship between income level and cancer diagnosis- far below a standard alpha of .05.  Therefore, we can conclude that cancer diagnosis does occur at higher rates of incidence for lower income individuals.  The cause of this effect goes well beyond the scope of this analysis.
 
 
 **Research quesion 3:**
@@ -113,8 +161,8 @@ brfss2013 %>% filter(!is.na(ment_bucket),!is.na(work_bucket)) %>% group_by(ment_
 
 # Overtime and Mental Health
 
-Now we can ask: Given that someone has heavy overtime, what is the probability that they are in poor mental health?  From the table above, we can see that this is 111/(985+111) = .1012
-The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = .0898
+Now we can ask: Given that someone has heavy overtime, what is the probability that they are in poor mental health?  From the table above, we can see that this is 111/(985+111) = **.1012**
+The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = **.0898**
 
 So at the moment, it looks as though high overtime and poor mental health might be directly related.  Let's test that.
 
@@ -124,12 +172,12 @@ What is the chance of getting 111 or more people of poor health out of 1096 (the
 sum(dbinom(111:1096,1096,.0898))
 
 ```
-As we can see, the probability is .1024.  This is a little bit high.  To be certain of a relationship, we would generally want to see a p-value of less than .05.  While there may be a relationship here, we cannot conclude with confidence that this is the case.
+As we can see, the probability is **.1024**.  This is a little bit high.  To be certain of a relationship, we would generally want to see a p-value of less than .05.  While there may be a relationship here, we cannot conclude with confidence that this is the case.
 
 # No work and Mental Health
 
-But what about low or no employment?  We can run the same analysis. Given that someone has no/low work, what is the probability that they are in poor mental health?  From the table above, we can see that this is 13/(13+151) = .0793
-The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = .0898
+But what about low or no employment?  We can run the same analysis. Given that someone has no/low work, what is the probability that they are in poor mental health?  From the table above, we can see that this is 13/(13+151) = **.0793**
+The probability of being in poor mental health for the total population comes to (13+1753+111)/(151+17876+985+13+1753+111) = 1877/20889 = **.0898**
 
 So at the moment, it looks as though no work and poor mental health might be inversely related. Let's test that.
 
@@ -140,7 +188,7 @@ sum(dbinom(0:13,164,.0898))
 
 
 ```
-We get a probability of 0.3816.  This is far too high to establish a relationship between no/low work and mental health.
+We get a probability of **0.3816**.  This is far too high to establish a relationship between no/low work and mental health.
 
 
 
